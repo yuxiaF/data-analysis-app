@@ -1,6 +1,6 @@
-openpyxl  streamlit  
-pandas  
-numpy  
-plotly  
-requests  
-openpyxl 
+streamlit
+pandas
+numpy
+plotly
+requests
+openpyxl
