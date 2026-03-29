@@ -360,241 +360,67 @@ if uploaded_file is not None:
         # 行业看板功能
         st.subheader(f'{industry}行业数据分析')
         
-        # 检查数据列是否包含所需字段
-        def check_columns(required_cols):
-            missing_cols = [col for col in required_cols if col not in cleaned_df.columns]
-            return missing_cols
+        # 动态识别数据列
+        numeric_cols = cleaned_df.select_dtypes(include=['number']).columns.tolist()
+        categorical_cols = cleaned_df.select_dtypes(include=['object']).columns.tolist()
         
-        # 零售行业图表
-        if industry == '零售':
-            st.markdown('<div class="card">', unsafe_allow_html=True)
-            # 销售漏斗图
-            st.subheader('销售漏斗图')
-            funnel_cols = ['浏览用户', '加购用户', '下单用户', '支付用户']
-            missing = check_columns(funnel_cols)
-            if not missing:
-                fig = go.Figure(go.Funnel(
-                    y=funnel_cols,
-                    x=[cleaned_df[col].sum() for col in funnel_cols],
-                    marker={'color': ['#4caf50', '#81c784', '#a5d6a7', '#c8e6c9']}
-                ))
-                fig.update_layout(template='plotly_white')
-                st.plotly_chart(fig)
-            else:
-                st.warning(f'缺少必要字段: {missing}')
-            st.markdown('</div>', unsafe_allow_html=True)
-            
-            st.markdown('<div class="card">', unsafe_allow_html=True)
-            # 每日销售额趋势图
-            st.subheader('每日销售额趋势图')
-            trend_cols = ['日期', '销售额']
-            missing = check_columns(trend_cols)
-            if not missing:
-                fig = px.line(cleaned_df, x='日期', y='销售额',
-                             color_discrete_sequence=['#2196f3'],
-                             template='plotly_white')
-                st.plotly_chart(fig)
-            else:
-                st.warning(f'缺少必要字段: {missing}')
-            st.markdown('</div>', unsafe_allow_html=True)
-            
-            st.markdown('<div class="card">', unsafe_allow_html=True)
-            # 各品类销售额占比饼图
-            st.subheader('各品类销售额占比')
-            pie_cols = ['品类', '销售额']
-            missing = check_columns(pie_cols)
-            if not missing:
-                fig = px.pie(cleaned_df, names='品类', values='销售额',
-                             color_discrete_sequence=['#4caf50', '#2196f3', '#ff9800', '#9c27b0', '#3f51b5'],
-                             template='plotly_white')
-                st.plotly_chart(fig)
-            else:
-                st.warning(f'缺少必要字段: {missing}')
-            st.markdown('</div>', unsafe_allow_html=True)
+        # 自动检测日期列
+        date_cols = []
+        for col in cleaned_df.columns:
+            col_lower = col.lower()
+            if any(keyword in col_lower for keyword in ['日期', '时间', 'month', 'date', 'time']):
+                date_cols.append(col)
         
-        # 制造业图表
-        elif industry == '制造业':
+        # 1. 类别对比柱状图（如果有分类列和数值列）
+        if categorical_cols and numeric_cols:
             st.markdown('<div class="card">', unsafe_allow_html=True)
-            # 生产量趋势图
-            st.subheader('生产量趋势图')
-            trend_cols = ['日期', '生产量']
-            missing = check_columns(trend_cols)
-            if not missing:
-                fig = px.line(cleaned_df, x='日期', y='生产量',
-                             color_discrete_sequence=['#4caf50'],
-                             template='plotly_white')
-                st.plotly_chart(fig)
-            else:
-                st.warning(f'缺少必要字段: {missing}')
-            st.markdown('</div>', unsafe_allow_html=True)
-            
-            st.markdown('<div class="card">', unsafe_allow_html=True)
-            # 设备故障率柱状图
-            st.subheader('设备故障率柱状图')
-            bar_cols = ['设备名称', '故障次数']
-            missing = check_columns(bar_cols)
-            if not missing:
-                fig = px.bar(cleaned_df, x='设备名称', y='故障次数',
-                            color_discrete_sequence=['#ff9800'],
-                            template='plotly_white')
-                st.plotly_chart(fig)
-            else:
-                st.warning(f'缺少必要字段: {missing}')
-            st.markdown('</div>', unsafe_allow_html=True)
-            
-            st.markdown('<div class="card">', unsafe_allow_html=True)
-            # 质量合格率仪表盘
-            st.subheader('质量合格率')
-            quality_cols = ['合格品数量', '不合格品数量']
-            missing = check_columns(quality_cols)
-            if not missing:
-                total = cleaned_df['合格品数量'].sum() + cleaned_df['不合格品数量'].sum()
-                pass_rate = (cleaned_df['合格品数量'].sum() / total) * 100
-                fig = go.Figure(go.Indicator(
-                    mode="gauge+number",
-                    value=pass_rate,
-                    title={'text': "合格率"},
-                    gauge={
-                        'axis': {'range': [None, 100]},
-                        'bar': {'color': "#4caf50"},
-                        'bgcolor': "#f0f9f0"
-                    }
-                ))
-                fig.update_layout(template='plotly_white')
-                st.plotly_chart(fig)
-            else:
-                st.warning(f'缺少必要字段: {missing}')
-            st.markdown('</div>', unsafe_allow_html=True)
-            
-            st.markdown('<div class="card">', unsafe_allow_html=True)
-            # 库存周转率折线图
-            st.subheader('库存周转率趋势图')
-            turnover_cols = ['月份', '库存周转率']
-            missing = check_columns(turnover_cols)
-            if not missing:
-                fig = px.line(cleaned_df, x='月份', y='库存周转率',
-                             color_discrete_sequence=['#2196f3'],
-                             template='plotly_white')
-                st.plotly_chart(fig)
-            else:
-                st.warning(f'缺少必要字段: {missing}')
-            st.markdown('</div>', unsafe_allow_html=True)
-        
-        # 科技行业图表
-        elif industry == '科技行业':
-            st.markdown('<div class="card">', unsafe_allow_html=True)
-            # 用户增长趋势图
-            st.subheader('用户增长趋势图')
-            user_cols = ['日期', '新增用户数', '活跃用户数']
-            missing = check_columns(user_cols)
-            if not missing:
-                fig = px.line(cleaned_df, x='日期', y=['新增用户数', '活跃用户数'],
-                             color_discrete_sequence=['#4caf50', '#2196f3'],
-                             template='plotly_white')
-                st.plotly_chart(fig)
-            else:
-                st.warning(f'缺少必要字段: {missing}')
-            st.markdown('</div>', unsafe_allow_html=True)
-            
-            st.markdown('<div class="card">', unsafe_allow_html=True)
-            # 产品版本发布效果对比图
-            st.subheader('产品版本发布效果对比')
-            version_cols = ['版本号', '留存率']
-            missing = check_columns(version_cols)
-            if not missing:
-                fig = px.bar(cleaned_df, x='版本号', y='留存率',
-                            color_discrete_sequence=['#4caf50'],
-                            template='plotly_white')
-                st.plotly_chart(fig)
-            else:
-                st.warning(f'缺少必要字段: {missing}')
-            st.markdown('</div>', unsafe_allow_html=True)
-            
-            st.markdown('<div class="card">', unsafe_allow_html=True)
-            # Bug 趋势图
-            st.subheader('Bug 趋势图')
-            bug_cols = ['日期', 'Bug数量']
-            missing = check_columns(bug_cols)
-            if not missing:
-                fig = px.line(cleaned_df, x='日期', y='Bug数量',
-                             color_discrete_sequence=['#ff9800'],
-                             template='plotly_white')
-                st.plotly_chart(fig)
-            else:
-                st.warning(f'缺少必要字段: {missing}')
-            st.markdown('</div>', unsafe_allow_html=True)
-            
-            st.markdown('<div class="card">', unsafe_allow_html=True)
-            # 渠道来源占比饼图
-            st.subheader('渠道来源占比')
-            channel_cols = ['渠道', '用户数']
-            missing = check_columns(channel_cols)
-            if not missing:
-                fig = px.pie(cleaned_df, names='渠道', values='用户数',
-                             color_discrete_sequence=['#4caf50', '#2196f3', '#ff9800', '#9c27b0', '#3f51b5'],
-                             template='plotly_white')
-                st.plotly_chart(fig)
-            else:
-                st.warning(f'缺少必要字段: {missing}')
-            st.markdown('</div>', unsafe_allow_html=True)
-        
-        # 广告投放行业图表
-        elif industry == '广告投放行业':
-            st.markdown('<div class="card">', unsafe_allow_html=True)
-            # 广告花费与转化趋势图
-            st.subheader('广告花费与转化趋势')
-            ad_cols = ['日期', '花费', '转化数']
-            missing = check_columns(ad_cols)
-            if not missing:
-                fig = px.line(cleaned_df, x='日期', y=['花费', '转化数'],
-                             color_discrete_sequence=['#ff9800', '#4caf50'],
-                             template='plotly_white')
-                st.plotly_chart(fig)
-            else:
-                st.warning(f'缺少必要字段: {missing}')
-            st.markdown('</div>', unsafe_allow_html=True)
-            
-            st.markdown('<div class="card">', unsafe_allow_html=True)
-            # 渠道 ROI 对比柱状图
-            st.subheader('渠道 ROI 对比')
-            roi_cols = ['渠道', '花费', '收入']
-            missing = check_columns(roi_cols)
-            if not missing:
-                cleaned_df['ROI'] = (cleaned_df['收入'] - cleaned_df['花费']) / cleaned_df['花费'] * 100
-                fig = px.bar(cleaned_df, x='渠道', y='ROI',
-                            color_discrete_sequence=['#2196f3'],
-                            template='plotly_white')
-                st.plotly_chart(fig)
-            else:
-                st.warning(f'缺少必要字段: {missing}')
-            st.markdown('</div>', unsafe_allow_html=True)
-            
-            st.markdown('<div class="card">', unsafe_allow_html=True)
-            # 曝光点击率散点图
-            st.subheader('曝光点击率分析')
-            ctr_cols = ['曝光量', '点击量']
-            missing = check_columns(ctr_cols)
-            if not missing:
-                cleaned_df['CTR'] = (cleaned_df['点击量'] / cleaned_df['曝光量']) * 100
-                fig = px.scatter(cleaned_df, x='曝光量', y='点击量', color='CTR',
-                                color_continuous_scale=['#e8f5e8', '#4caf50', '#2e7d32'],
+            st.subheader('类别对比分析')
+            # 选择第一个分类列和数值列进行分析
+            cat_col = categorical_cols[0]
+            # 限制类别数量，避免图表过于拥挤
+            if cleaned_df[cat_col].nunique() <= 10:
+                for num_col in numeric_cols[:3]:  # 最多显示3个数值列
+                    fig = px.bar(cleaned_df, x=cat_col, y=num_col, 
+                                title=f'{cat_col}下{num_col}对比',
+                                color_discrete_sequence=['#4caf50', '#2196f3', '#ff9800'],
                                 template='plotly_white')
-                st.plotly_chart(fig)
+                    st.plotly_chart(fig)
             else:
-                st.warning(f'缺少必要字段: {missing}')
+                st.write(f'{cat_col}类别数量过多（{cleaned_df[cat_col].nunique()}个），无法显示完整对比')
             st.markdown('</div>', unsafe_allow_html=True)
-            
+        
+        # 2. 数值列相关性热力图（如果有多列数值）
+        if len(numeric_cols) >= 2:
             st.markdown('<div class="card">', unsafe_allow_html=True)
-            # 广告系列效果排行表
-            st.subheader('广告系列效果排行')
-            campaign_cols = ['系列名称', '花费', '转化成本']
-            missing = check_columns(campaign_cols)
-            if not missing:
-                sorted_df = cleaned_df.sort_values('转化成本', ascending=True)
-                st.dataframe(sorted_df[campaign_cols])
-            else:
-                st.warning(f'缺少必要字段: {missing}')
+            st.subheader('数值列相关性分析')
+            corr_matrix = cleaned_df[numeric_cols].corr()
+            fig = px.imshow(corr_matrix, text_auto=True, title='相关性热力图',
+                           color_continuous_scale=['#e8f5e8', '#4caf50', '#2e7d32'],
+                           template='plotly_white')
+            st.plotly_chart(fig)
             st.markdown('</div>', unsafe_allow_html=True)
+        
+        # 3. 趋势图（如果有日期列和数值列）
+        if date_cols and numeric_cols:
+            st.markdown('<div class="card">', unsafe_allow_html=True)
+            st.subheader('时间趋势分析')
+            date_col = date_cols[0]
+            for num_col in numeric_cols[:3]:  # 最多显示3个数值列
+                fig = px.line(cleaned_df, x=date_col, y=num_col, 
+                            title=f'{num_col}随{date_col}趋势',
+                            color_discrete_sequence=['#4caf50', '#2196f3', '#ff9800'],
+                            template='plotly_white')
+                st.plotly_chart(fig)
+            st.markdown('</div>', unsafe_allow_html=True)
+        
+        # 4. 数据概览
+        st.markdown('<div class="card">', unsafe_allow_html=True)
+        st.subheader('数据概览')
+        st.write(f'数据形状：{cleaned_df.shape}')
+        st.write(f'数值列：{numeric_cols}')
+        st.write(f'分类列：{categorical_cols}')
+        st.write(f'日期列：{date_cols}')
+        st.markdown('</div>', unsafe_allow_html=True)
         
         # 智能洞察板块
         st.markdown('<div class="card">', unsafe_allow_html=True)
@@ -774,12 +600,33 @@ if uploaded_file is not None:
         st.session_state.chat_history.append({'role': 'user', 'content': user_input})
         
         # 构建数据上下文
+        # 计算数值列统计信息
+        numeric_stats = ""
+        numeric_cols = cleaned_df.select_dtypes(include=['number']).columns
+        if len(numeric_cols) > 0:
+            numeric_stats = "\n数值列统计信息：\n"
+            for col in numeric_cols:
+                col_sum = cleaned_df[col].sum()
+                col_mean = cleaned_df[col].mean()
+                col_max = cleaned_df[col].max()
+                col_min = cleaned_df[col].min()
+                numeric_stats += f"- {col}: 总和={col_sum:.2f}, 均值={col_mean:.2f}, 最大值={col_max:.2f}, 最小值={col_min:.2f}\n"
+        
+        # 文本列示例
+        text_samples = ""
+        text_cols = cleaned_df.select_dtypes(include=['object']).columns
+        if len(text_cols) > 0:
+            text_samples = "\n文本列示例：\n"
+            for col in text_cols:
+                unique_values = cleaned_df[col].dropna().unique()[:3]
+                text_samples += f"- {col}: {list(unique_values)}\n"
+        
         data_summary = f"""
 数据摘要：
 - 数据形状：{cleaned_df.shape}
 - 列名：{list(cleaned_df.columns)}
-- 前5行数据：
-{cleaned_df.head().to_string()}
+{numeric_stats}
+{text_samples}
 """
         
         # 系统提示词
